@@ -1,8 +1,8 @@
 # Base PHP 8.2 with Apache
 FROM php:8.2-apache
 
-# Install system dependencies and PHP extensions
-RUN apt-get update && apt-get install -y \
+# Install system dependencies required for PHP extensions
+RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     unzip \
     zip \
@@ -13,7 +13,9 @@ RUN apt-get update && apt-get install -y \
     libicu-dev \
     libonig-dev \
     libxml2-dev \
+    libzip-dev \
     curl \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install \
         pdo \
         pdo_pgsql \
@@ -22,7 +24,8 @@ RUN apt-get update && apt-get install -y \
         gd \
         xml \
         zip \
-    && a2enmod rewrite
+    && a2enmod rewrite \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -37,11 +40,11 @@ COPY . .
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html
 
-# Increase PHP memory limit and run Composer
+# Increase PHP memory limit for Composer
 RUN php -d memory_limit=2G /usr/bin/composer install --no-dev --optimize-autoloader
 
-# Expose port 80
+# Expose Apache port
 EXPOSE 80
 
-# Start Apache
+# Start Apache in foreground
 CMD ["apache2-foreground"]
