@@ -1,7 +1,7 @@
-# Use PHP 8.2 with Apache
+# Base PHP 8.2 with Apache
 FROM php:8.2-apache
 
-# Install system dependencies required for EspoCRM
+# Install system dependencies and PHP extensions
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     libicu-dev \
     libonig-dev \
+    libxml2-dev \
     curl \
     && docker-php-ext-install \
         pdo \
@@ -19,6 +20,8 @@ RUN apt-get update && apt-get install -y \
         mbstring \
         intl \
         gd \
+        xml \
+        zip \
     && a2enmod rewrite
 
 # Install Composer
@@ -30,15 +33,15 @@ WORKDIR /var/www/html
 # Copy EspoCRM files
 COPY . .
 
-# Give proper permissions to allow Composer to write
+# Fix permissions
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html
 
-# Install PHP dependencies via Composer
-RUN composer install --no-dev --optimize-autoloader
+# Increase PHP memory limit and run Composer
+RUN php -d memory_limit=2G /usr/bin/composer install --no-dev --optimize-autoloader
 
-# Expose Apache port
+# Expose port 80
 EXPOSE 80
 
-# Start Apache in foreground
+# Start Apache
 CMD ["apache2-foreground"]
