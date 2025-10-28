@@ -1,7 +1,7 @@
 # Use PHP 8.2 with Apache
 FROM php:8.2-apache
 
-# Install dependencies including PostgreSQL headers
+# Install system dependencies and PHP extensions required for EspoCRM
 RUN apt-get update && apt-get install -y \
     libpng-dev \
     libjpeg-dev \
@@ -10,7 +10,10 @@ RUN apt-get update && apt-get install -y \
     unzip \
     git \
     libpq-dev \
-    && docker-php-ext-install pdo pdo_pgsql gd
+    libicu-dev \
+    libonig-dev \
+    curl \
+    && docker-php-ext-install pdo pdo_pgsql mbstring intl gd
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -20,6 +23,9 @@ WORKDIR /var/www/html
 
 # Copy EspoCRM files
 COPY . .
+
+# Ensure permissions for composer
+RUN chown -R www-data:www-data /var/www/html
 
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader
